@@ -15,7 +15,6 @@ namespace TestClient
             {
                 PoundTheService(userCount);
 
-                Console.WriteLine("--------------------------------------------");
                 userCount = 0;
                 ShowHeader();
                 userCount = AskHowManyUsers();
@@ -49,7 +48,10 @@ namespace TestClient
         {
             threadEvents = new ManualResetEvent[userCount];
             threadWorkers = new ServiceCallWorkItem[userCount];
+            Console.WriteLine("");
             Console.Write("Calling Service with {0} simulated concurrent users...", userCount);
+            ServiceCallWorkItem.CallCount = 0; // Reset call counter
+            ServiceCallWorkItem.ExceptionCount = 0; // Reset exception counter
             for (int i = 0; i < userCount; i++)
             {
                 threadEvents[i] = new ManualResetEvent(false);
@@ -63,12 +65,54 @@ namespace TestClient
             WaitHandle.WaitAll(threadEvents);
             Console.Write("[Done]");
             Console.WriteLine("");
+
+            // Show our call and exception stats
+            Console.WriteLine();
+            Console.WriteLine("--------------------------------------------");
+            Console.WriteLine("Results ({0} concurrent user(s)): {1} exceptions out of {2} total service calls.",
+                userCount,
+                ServiceCallWorkItem.ExceptionCount,
+                ServiceCallWorkItem.CallCount);
+            Console.WriteLine("--------------------------------------------");
+            Console.WriteLine();
         }
     }
 
     public sealed class ServiceCallWorkItem
     {
         private ManualResetEvent _doneEvent;
+
+        #region Call Counter
+        private static object _callCountLock = new object();
+        private static int _callCount = 0;
+        public static int CallCount
+        {
+            get { return _callCount; }
+            set
+            {
+                lock (_callCountLock)
+                {
+                    _callCount = value;
+                }
+            }
+        }
+        #endregion
+
+        #region Exception Counter
+        private static object _exceptionCountLock = new object();
+        private static int _exceptionCount = 0;
+        public static int ExceptionCount
+        {
+            get { return _exceptionCount; }
+            set
+            {
+                lock (_exceptionCountLock)
+                {
+                    _exceptionCount = value;
+                }
+            }
+        }
+        #endregion
 
         public ServiceCallWorkItem(ManualResetEvent doneEvent)
         {
@@ -101,11 +145,11 @@ namespace TestClient
            where TReturn : class
         {
             var isCommunicationObject = serviceProxy as ICommunicationObject != null;
-
             TReturn result = null;
 
             try
             {
+                CallCount++; // Increment the call counter
                 result = func(serviceProxy);
 
                 if (isCommunicationObject)
@@ -113,6 +157,7 @@ namespace TestClient
             }
             catch (Exception)
             {
+                ExceptionCount++; // Increment the exception counter
                 if (isCommunicationObject)
                 {
                     ((ICommunicationObject)serviceProxy).Abort();

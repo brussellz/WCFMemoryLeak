@@ -8,10 +8,15 @@ namespace WCFMemoryLeak1
 {
     public class DataService : IDataService
     {
+        /// <summary>
+        /// Retrieve a hydrated Customer from the AdventureWorks database by Customer Id.
+        /// </summary>
+        /// <param name="id">The Id of the Customer to load</param>
+        /// <returns>Fully hydrated Customer entity</returns>
         public Customer GetCustomerById(int id)
         {
             var customer = new Customer();
-            var dataAccessService = ServiceLocator.Current.GetInstance<IDataAccessService>(); //new DataAccessService();
+            var dataAccessService = ServiceLocator.Current.GetInstance<IDataAccessService>();
             var dataTable = dataAccessService.GetCustomerById(id);
 
             // Convert from DataTable to our POCO object
@@ -43,10 +48,15 @@ namespace WCFMemoryLeak1
             return customer;
         }
 
+        /// <summary>
+        /// Retrieve a list of Customers hydrated from the AdventureWorks database by country.
+        /// </summary>
+        /// <param name="country">The country of the customer to load by</param>
+        /// <returns>Fully hydrated list of Customer entities</returns>
         public List<Customer> GetCustomersByCountry(string country)
         {
             var customers = new List<Customer>();
-            var dataAccessService = ServiceLocator.Current.GetInstance<IDataAccessService>(); //new DataAccessService();
+            var dataAccessService = ServiceLocator.Current.GetInstance<IDataAccessService>();
             var dataTable = dataAccessService.GetCustomersByCountry(country);
 
             // Convert from DataTable to our POCO object
